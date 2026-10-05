@@ -1,0 +1,15 @@
+{
+  "name": "Birreria Oktoberfest · Menù",
+  "short_name": "Oktoberfest RE",
+  "description": "Il menù digitale di Birreria Oktoberfest, Reggio Emilia.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0c0a0b",
+  "theme_color": "#b00101",
+  "lang": "it",
+  "icons": [
+    { "src": "assets/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
