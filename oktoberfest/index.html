@@ -16,7 +16,7 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Menù · Birreria Oktoberfest Reggio Emilia">
   <meta property="og:description" content="Birre alla spina, bottiglie, cucina, burger, pizza, fritti, dolci, cantina e cocktails. Scansiona, scegli, segnati la tua lista.">
-  <meta property="og:image" content="assets/img/logo-story.jpg">
+  <meta property="og:image" content="assets/img/logo-card.webp">
   <meta property="og:locale" content="it_IT">
   <meta name="twitter:card" content="summary_large_image">
 
@@ -88,12 +88,10 @@
     <!-- Hero -->
     <section class="hero" id="hero">
       <div class="hero__card">
-        <div class="hero__shine" aria-hidden="true"></div>
-        <img class="hero__logo" src="assets/img/logo-title.webp" alt="Birreria Oktoberfest · Reggio Emilia" width="785" height="410" fetchpriority="high">
-        <a class="ig-pill" id="igPill" href="https://www.instagram.com/birreriaoktoberfestre/" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>
-          <span>@birreriaoktoberfestre</span>
-        </a>
+        <div class="logo-card">
+          <img class="logo-card__img" src="assets/img/logo-card.webp" alt="Birreria Oktoberfest · Reggio Emilia" width="941" height="840" fetchpriority="high">
+          <a class="logo-card__ig" href="https://www.instagram.com/birreriaoktoberfestre/" target="_blank" rel="noopener" aria-label="Instagram @birreriaoktoberfestre"></a>
+        </div>
         <p class="hero__tag" data-i18n="heroTag">Il menù completo. Scorri, cerca, aggiungi alla tua lista.</p>
         <div class="hero__quick">
           <a class="chip chip--ghost" id="mapsLink" href="#" target="_blank" rel="noopener">
@@ -122,36 +120,34 @@
     </div>
 
     <footer class="footer">
-      <img class="footer__logo" src="assets/img/logo-title.webp" alt="" width="785" height="410" loading="lazy" decoding="async">
+      <div class="logo-card logo-card--footer">
+        <img class="logo-card__img" src="assets/img/logo-card.webp" alt="Birreria Oktoberfest · Reggio Emilia" width="941" height="840" loading="lazy" decoding="async">
+        <a class="logo-card__ig" href="https://www.instagram.com/birreriaoktoberfestre/" target="_blank" rel="noopener" aria-label="Instagram @birreriaoktoberfestre"></a>
+      </div>
       <p class="footer__line" id="footerAddr"></p>
       <p class="footer__line" id="footerPhone"></p>
-      <a class="ig-pill ig-pill--small" href="https://www.instagram.com/birreriaoktoberfestre/" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>
-        <span>@birreriaoktoberfestre</span>
-      </a>
       <div class="footer__notes" id="footerNotes"></div>
       <p class="footer__legal" data-i18n="legal">Prezzi in euro, IVA inclusa. Il menù può subire variazioni.</p>
     </footer>
   </main>
 
-  <!-- Pulsanti flottanti -->
-  <div class="fabs" aria-hidden="false">
-    <button class="fab fab--ghost" id="prevSection" type="button" data-i18n-aria="prevSection" aria-label="Sezione precedente">
-      <svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg>
-    </button>
-    <button class="fab fab--ghost" id="nextSection" type="button" data-i18n-aria="nextSection" aria-label="Sezione successiva">
-      <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
-    </button>
-    <button class="fab fab--ghost fab--top" id="toTop" type="button" data-i18n-aria="backToTop" aria-label="Torna all'inizio">
+  <!-- Dock: navigazione rapida + lista -->
+  <div class="dock">
+    <button class="fab fab--top" id="toTop" type="button" data-i18n-aria="backToTop" aria-label="Torna all'inizio">
       <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
     </button>
+    <button class="fab" id="prevSection" type="button" data-i18n-aria="prevSection" aria-label="Sezione precedente">
+      <svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg>
+    </button>
+    <button class="list-fab" id="listFab" type="button" aria-controls="listDrawer" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg>
+      <span class="list-fab__label" data-i18n="myList">La mia lista</span>
+      <span class="list-fab__count" id="listCount" hidden>0</span>
+    </button>
+    <button class="fab" id="nextSection" type="button" data-i18n-aria="nextSection" aria-label="Sezione successiva">
+      <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
   </div>
-
-  <button class="list-fab" id="listFab" type="button" aria-controls="listDrawer" aria-expanded="false">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg>
-    <span class="list-fab__label" data-i18n="myList">La mia lista</span>
-    <span class="list-fab__count" id="listCount" hidden>0</span>
-  </button>
 
   <!-- Drawer lista -->
   <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
@@ -195,6 +191,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="assets/js/menu-data.js"></script>
+  <script src="assets/js/menu-data.en.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>

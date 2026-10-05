@@ -66,8 +66,22 @@
       qtyMinus: "Decrease", qtyPlus: "Increase", sectionsLabel: "Menu sections"
     }
   };
-  let lang = LS.get("okt.lang", "it"); // italiano di default; EN disponibile dal pulsante in alto
+  let lang = "it"; // all'apertura SEMPRE italiano; EN solo su richiesta dal pulsante in alto
   const t = (k, ...a) => { const v = I18N[lang][k]; return typeof v === "function" ? v(...a) : v; };
+
+  /* Traduzioni del menù (menu-data.en.js). Ogni funzione ricade sull'italiano se manca la voce. */
+  const EN = window.MENU_EN || null;
+  const tr = () => (lang === "en" ? EN : null);
+  const sx = (sec, f) => { const S = tr() && tr().sections[sec.id]; return (S && S[f] != null) ? S[f] : sec[f]; };
+  const gx = (sec, g, f) => { const S = tr() && tr().sections[sec.id]; const G = S && S.groups && S.groups[g.title]; return (G && G[f] != null) ? G[f] : g[f]; };
+  const ix = (it, f) => { const I = tr() && tr().items[it.id]; return (I && I[f] != null) ? I[f] : it[f]; };
+  const ax = f => { const A = tr() && tr().allergens; return (A && A[f] != null) ? A[f] : M.allergens[f]; };
+  const bx = f => { const B = tr() && tr().brand; return (B && B[f] != null) ? B[f] : M.brand[f]; };
+  const pl = l => {
+    if (!l || !tr()) return l;
+    const m = tr().priceLabels || {}; if (m[l]) return m[l];
+    const w = l.split(" "); return m[w[0]] ? [m[w[0]], ...w.slice(1)].join(" ") : l;
+  };
 
   /* ------------------------------------------------------------------
      Icone (inline SVG)
@@ -123,29 +137,31 @@
       return `<div class="prices"><div class="price-row price-row--single"><span class="price-row__dots"></span><span class="price">${fmt(item.prices[0].p)}</span>${addBtn(item, 0)}</div></div>`;
     }
     return `<div class="prices">${item.prices.map((pr, i) =>
-      `<div class="price-row"><span class="price-row__label">${esc(pr.l || "")}</span><span class="price-row__dots"></span><span class="price">${fmt(pr.p)}</span>${addBtn(item, i)}</div>`
+      `<div class="price-row"><span class="price-row__label">${esc(pl(pr.l) || "")}</span><span class="price-row__dots"></span><span class="price">${fmt(pr.p)}</span>${addBtn(item, i)}</div>`
     ).join("")}</div>`;
   }
 
   function renderItem(item, section, group) {
     item.prices.forEach((pr, i) => { INDEX[keyOf(item, i)] = { item, pi: i, section, group }; });
     const isBeer = !!item.img;
-    const badge = item.badge ? `<span class="item__badge">${esc(item.badge)}</span>` : "";
+    const name = ix(item, "name"), sub = ix(item, "sub"), desc = ix(item, "desc");
+    const badge = ix(item, "badge") ? `<span class="item__badge">${esc(ix(item, "badge"))}</span>` : "";
     const inList = item.prices.some((_, i) => list[keyOf(item, i)]);
-    const search = esc([item.name, item.sub, item.desc, item.badge, item.style, item.brewery, item.origin, group.title, section.title].filter(Boolean).join(" ").toLowerCase());
+    const en = EN && EN.items[item.id] ? Object.values(EN.items[item.id]).filter(v => typeof v === "string") : [];
+    const search = esc([item.name, item.sub, item.desc, item.badge, item.style, item.brewery, item.origin, group.title, section.title, ...en].filter(Boolean).join(" ").toLowerCase());
 
     if (isBeer) {
       return `<article class="item item--beer reveal${inList ? " is-in" : ""}" id="${esc(item.id)}" data-search="${search}">
         <div class="item__logo"><img src="assets/img/${esc(item.img)}" alt="" loading="lazy" decoding="async" width="62" height="62"></div>
         <div class="item__head">
           <div>
-            <h4 class="item__name">${esc(item.name)}${badge}</h4>
-            <p class="item__sub">${esc(item.sub || "")}</p>
+            <h4 class="item__name">${esc(name)}${badge}</h4>
+            <p class="item__sub">${esc(sub || "")}</p>
           </div>
           ${item.abv ? `<span class="pill-abv">${esc(item.abv)}</span>` : ""}
         </div>
         <div class="item__body">
-          ${item.desc ? `<p class="item__desc item__desc--clamp">${esc(item.desc)}</p><button class="item__more" type="button" aria-expanded="false">${esc(t("more"))}</button>` : ""}
+          ${desc ? `<p class="item__desc item__desc--clamp">${esc(desc)}</p><button class="item__more" type="button" aria-expanded="false">${esc(t("more"))}</button>` : ""}
           ${renderTags(item)}
           ${renderPrices(item)}
         </div>
@@ -153,9 +169,9 @@
     }
     return `<article class="item item--simple reveal${inList ? " is-in" : ""}" id="${esc(item.id)}" data-search="${search}">
       <div class="item__head">
-        <h4 class="item__name">${esc(item.name)}${badge}</h4>
-        ${item.sub ? `<p class="item__sub">${esc(item.sub)}</p>` : ""}
-        ${item.desc ? `<p class="item__desc">${esc(item.desc)}</p>` : ""}
+        <h4 class="item__name">${esc(name)}${badge}</h4>
+        ${sub ? `<p class="item__sub">${esc(sub)}</p>` : ""}
+        ${desc ? `<p class="item__desc">${esc(desc)}</p>` : ""}
         ${renderTags(item)}
       </div>
       ${renderPrices(item)}
@@ -163,7 +179,7 @@
   }
 
   function noteHtml(kind) {
-    const map = { service: M.brand.serviceNote, allergy: M.brand.allergyNote, frozen: M.brand.frozenNote };
+    const map = { service: bx("serviceNote"), allergy: bx("allergyNote"), frozen: bx("frozenNote") };
     return `<div class="note">${ICON.note}<div><b>${esc(t(kind))}</b> · ${esc(map[kind])}</div></div>`;
   }
 
@@ -171,17 +187,18 @@
     const groups = section.groups.map(g => {
       const gid = `${section.id}--${slug(g.title)}`;
       g._id = gid;
-      return `<div class="group" id="${gid}" data-title="${esc(g.title)}">
-        <div class="group__head"><h3 class="group__title">${esc(g.title)}</h3></div>
-        ${g.intro ? `<p class="group__intro">${esc(g.intro)}</p>` : ""}
+      const gTitle = gx(section, g, "title"), gIntro = gx(section, g, "intro"), gFoot = gx(section, g, "footnotes");
+      return `<div class="group" id="${gid}" data-title="${esc(gTitle)}">
+        <div class="group__head"><h3 class="group__title">${esc(gTitle)}</h3></div>
+        ${gIntro ? `<p class="group__intro">${esc(gIntro)}</p>` : ""}
         <div class="grid${section.id === "spina" || section.id === "bottiglie" ? " grid--beer" : ""}">${g.items.map(it => renderItem(it, section, g)).join("")}</div>
-        ${g.footnotes ? g.footnotes.map(f => `<p class="group__foot">${esc(f).replace(/(\+ € [\d.,]+)/, "<b>$1</b>")}</p>`).join("") : ""}
+        ${gFoot ? gFoot.map(f => `<p class="group__foot">${esc(f).replace(/(\+ € [\d.,]+)/, "<b>$1</b>")}</p>`).join("") : ""}
       </div>`;
     }).join("");
     const notes = section.notes ? `<div class="notes">${section.notes.map(noteHtml).join("")}</div>` : "";
-    return `<section class="section" id="${esc(section.id)}" data-title="${esc(section.title)}">
+    return `<section class="section" id="${esc(section.id)}" data-title="${esc(sx(section, "title"))}">
       <div class="section__head">
-        <div><h2 class="section__title">${esc(section.title)}</h2><p class="section__sub">${esc(section.subtitle || "")}</p></div>
+        <div><h2 class="section__title">${esc(sx(section, "title"))}</h2><p class="section__sub">${esc(sx(section, "subtitle") || "")}</p></div>
         <span class="section__num" aria-hidden="true">${String(idx + 1).padStart(2, "0")}</span>
       </div>
       ${groups}${notes}
@@ -190,18 +207,19 @@
 
   function renderAllergens() {
     const A = M.allergens;
-    return `<section class="section allergens" id="${A.id}" data-title="${esc(A.title)}">
+    const enList = tr() && tr().allergens ? tr().allergens.list : null;
+    return `<section class="section allergens" id="${A.id}" data-title="${esc(ax("title"))}">
       <div class="section__head">
-        <div><h2 class="section__title">${esc(A.title)}</h2><p class="section__sub">Reg. CE 1169/2011</p></div>
+        <div><h2 class="section__title">${esc(ax("title"))}</h2><p class="section__sub">Reg. ${lang === "en" ? "EC" : "CE"} 1169/2011</p></div>
         <span class="section__num" aria-hidden="true">${String(M.sections.length + 1).padStart(2, "0")}</span>
       </div>
       <div class="allergens__card reveal">
-        <h3 class="allergens__heading">${esc(A.heading)}</h3>
-        <p class="allergens__legal">${esc(A.legal)}</p>
-        <p class="allergens__notice">${esc(A.notice)}</p>
-        <p class="allergens__intro">${esc(A.listIntro)}</p>
-        <div class="allergens__grid">${A.list.map(a => `<div class="allergen"><span class="allergen__n">${a.n}</span><span class="allergen__t">${esc(a.t)}</span></div>`).join("")}</div>
-        <p class="allergens__sign">${esc(A.signature)}</p>
+        <h3 class="allergens__heading">${esc(ax("heading"))}</h3>
+        <p class="allergens__legal">${esc(ax("legal"))}</p>
+        <p class="allergens__notice">${esc(ax("notice"))}</p>
+        <p class="allergens__intro">${esc(ax("listIntro"))}</p>
+        <div class="allergens__grid">${A.list.map((a, i) => `<div class="allergen"><span class="allergen__n">${a.n}</span><span class="allergen__t">${esc(enList && enList[i] ? enList[i] : a.t)}</span></div>`).join("")}</div>
+        <p class="allergens__sign">${esc(ax("signature"))}</p>
       </div>
     </section>`;
   }
@@ -209,7 +227,7 @@
   function renderNav() {
     const all = [...M.sections, M.allergens];
     $("#navScroller").innerHTML = all.map(s =>
-      `<a class="nav-chip" href="#${esc(s.id)}" data-target="${esc(s.id)}">${ICON[s.icon] || ""}<span>${esc(s.short || s.title)}</span></a>`
+      `<a class="nav-chip" href="#${esc(s.id)}" data-target="${esc(s.id)}">${ICON[s.icon] || ""}<span>${esc(s === M.allergens ? ax("short") : (sx(s, "short") || sx(s, "title")))}</span></a>`
     ).join("");
   }
 
@@ -224,13 +242,14 @@
     $("#footerAddr").innerHTML = `<a href="${esc(M.brand.mapsUrl)}" target="_blank" rel="noopener">${esc(M.brand.address)}</a>`;
     $("#footerPhone").innerHTML = `<a href="${esc(M.brand.phoneHref)}">${esc(M.brand.phone)}</a>`;
     $("#footerNotes").innerHTML = ["service", "allergy", "frozen"].map(noteHtml).join("");
-    $("#igTop").href = $("#igPill").href = M.brand.instagramUrl;
+    $("#igTop").href = M.brand.instagramUrl;
+    $$(".logo-card__ig").forEach(a => { a.href = M.brand.instagramUrl; });
   }
 
   /* ------------------------------------------------------------------
      Lingua & tema
      ------------------------------------------------------------------ */
-  function applyLang() {
+  function applyLang(rerender) {
     document.documentElement.lang = lang;
     $$("[data-i18n]").forEach(el => { el.innerHTML = t(el.dataset.i18n); });
     $$("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
@@ -238,14 +257,18 @@
     $("#langToggle").textContent = lang === "it" ? "EN" : "IT";
     $("#langToggle").setAttribute("aria-label", lang === "it" ? "Switch language to English" : "Passa all'italiano");
     $("#nav").setAttribute("aria-label", t("sectionsLabel"));
-    $$(".item__more").forEach(b => { b.textContent = b.getAttribute("aria-expanded") === "true" ? t("less") : t("more"); });
-    $$(".tag").forEach(el => { const k = Array.from(el.classList).find(c => c.startsWith("tag--")); if (k) { const l = M.tagLabels[k.slice(5)]; if (l) el.textContent = l[lang]; } });
-    // Note di sezione e footer: ricostruisci con etichette tradotte
-    M.sections.forEach(s => { if (!s.notes) return; const box = $(`#${s.id} .notes`); if (box) box.innerHTML = s.notes.map(noteHtml).join(""); });
-    $("#footerNotes").innerHTML = ["service", "allergy", "frozen"].map(noteHtml).join("");
+    if (rerender) {
+      // Rigenera tutto il menù nella lingua scelta, senza perdere la posizione
+      const y = window.scrollY; const q = searchInput.value;
+      renderAll();
+      $$(".reveal").forEach(e => e.classList.add("is-visible"));
+      activeId = null; updateActive();
+      if (q) runSearch(q);
+      window.scrollTo({ top: y, behavior: "auto" });
+    }
     renderDrawer();
   }
-  $("#langToggle").addEventListener("click", () => { lang = lang === "it" ? "en" : "it"; LS.set("okt.lang", lang); applyLang(); });
+  $("#langToggle").addEventListener("click", () => { lang = lang === "it" ? "en" : "it"; applyLang(true); });
 
   const root = document.documentElement;
   let theme = LS.get("okt.theme", null) || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
@@ -311,11 +334,11 @@
     const bySection = new Map();
     entries.forEach(([k, q]) => { const r = INDEX[k]; if (!bySection.has(r.section.id)) bySection.set(r.section.id, { s: r.section, rows: [] }); bySection.get(r.section.id).rows.push({ k, q, r }); });
     body.innerHTML = Array.from(bySection.values()).map(({ s, rows }) => `<div class="list-group">
-      <p class="list-group__title">${esc(s.title)}</p>
+      <p class="list-group__title">${esc(sx(s, "title"))}</p>
       ${rows.map(({ k, q, r }) => {
         const pr = r.item.prices[r.pi];
         return `<div class="list-row" data-key="${esc(k)}">
-          <div><div class="list-row__name">${esc(r.item.name)}</div><div class="list-row__meta">${esc([pr.l, r.group.title].filter(Boolean).join(" · "))}</div></div>
+          <div><div class="list-row__name">${esc(ix(r.item, "name"))}</div><div class="list-row__meta">${esc([pl(pr.l), gx(r.section, r.group, "title")].filter(Boolean).join(" · "))}</div></div>
           <div class="qty" role="group"><button type="button" data-d="-1" aria-label="${esc(t("qtyMinus"))}">${q === 1 ? ICON.trash : ICON.minus}</button><output>${q}</output><button type="button" data-d="1" aria-label="${esc(t("qtyPlus"))}">${ICON.plus}</button></div>
           <div class="list-row__price">${fmt(pr.p * q)}</div>
         </div>`;
@@ -369,8 +392,8 @@
     const bySection = new Map();
     entries.forEach(([k, q]) => { const r = INDEX[k]; if (!bySection.has(r.section.id)) bySection.set(r.section.id, []); bySection.get(r.section.id).push({ q, r }); });
     bySection.forEach((rows, sid) => {
-      lines.push(`— ${rows[0].r.section.title.toUpperCase()} —`);
-      rows.forEach(({ q, r }) => { const pr = r.item.prices[r.pi]; lines.push(`${q}× ${r.item.name}${pr.l ? ` (${pr.l})` : ""} · ${fmt(pr.p * q)}`); });
+      lines.push(`— ${sx(rows[0].r.section, "title").toUpperCase()} —`);
+      rows.forEach(({ q, r }) => { const pr = r.item.prices[r.pi]; lines.push(`${q}× ${ix(r.item, "name")}${pr.l ? ` (${pl(pr.l)})` : ""} · ${fmt(pr.p * q)}`); });
       lines.push("");
     });
     if (note.value.trim()) { lines.push(`${t("noteHead")}: ${note.value.trim()}`, ""); }
@@ -563,14 +586,14 @@
     if (!searchBar.hidden) toggleSearch(false);
     el.classList.add("is-visible");
     scrollToEl(el);
-    setTimeout(() => { el.classList.remove("is-hit"); void el.offsetWidth; el.classList.add("is-hit"); toast(t("surpriseToast", pick.name)); }, 450);
+    setTimeout(() => { el.classList.remove("is-hit"); void el.offsetWidth; el.classList.add("is-hit"); toast(t("surpriseToast", ix(pick, "name"))); }, 450);
   });
 
   /* ------------------------------------------------------------------
      Avvio
      ------------------------------------------------------------------ */
   renderAll();
-  applyLang();
+  applyLang(false);
   setupReveal();
   syncButtons("__init__");
   updateActive();

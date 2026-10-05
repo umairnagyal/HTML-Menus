@@ -19,7 +19,8 @@ oktoberfest/
     ├── css/style.css         ← grafica
     ├── css/fonts.css         ← font self-hosted
     ├── fonts/*.woff2
-    ├── js/menu-data.js       ← ★ TUTTO IL MENÙ: piatti, birre, prezzi
+    ├── js/menu-data.js       ← ★ TUTTO IL MENÙ: piatti, birre, prezzi (italiano)
+    ├── js/menu-data.en.js    ← testi in inglese, abbinati per `id`
     ├── js/app.js             ← logica (lista, ricerca, navigazione)
     └── img/                  ← logo, loghi birre, icone
 ```
@@ -45,14 +46,14 @@ Si modifica un solo file: `assets/js/menu-data.js`. Ogni voce è così:
 - `tags` mostra chip informativi: `casa`, `senza-glutine`, `analcolico`, `vacca-rossa`, `veg`, `bimbi`, `cani`.
 - Le birre hanno anche `img` (logo in `assets/img/beers/`), `abv`, `style`, `brewery`, `origin`.
 
-Dopo ogni modifica ricarica `menu-data.js` sull'hosting. Se usi il service worker, cambia anche `VERSION` in `sw.js` per forzare l'aggiornamento della cache.
+Se cambi la descrizione di un piatto, aggiorna anche la voce con lo stesso `id` in `menu-data.en.js` (se manca, il menù mostra l'italiano). Dopo ogni modifica ricarica i file sull'hosting. Se usi il service worker, cambia anche `VERSION` in `sw.js` per forzare l'aggiornamento della cache.
 
 ### Funzioni
 
 - **La mia lista**: ogni voce ha un `+`; la lista si apre dal pulsante rosso, con quantità, totale indicativo, appunti liberi, copia e condivisione (WhatsApp, ecc.). Resta salvata sul telefono del cliente. Non è un sistema di ordinazione.
 - **Navigazione**: barra di sezioni scorrevole con sotto-sezioni, frecce sezione precedente/successiva, torna su, barra di avanzamento.
 - **Ricerca**: per birra, piatto, cocktail, stile, birrificio; evidenzia le parole trovate.
-- **Tema** scuro/chiaro e interfaccia **IT/EN** (le voci del menù restano in italiano).
+- **Tema** scuro/chiaro e menù **IT/EN**: all'apertura è sempre in italiano; il pulsante EN traduce interfaccia, descrizioni, sezioni, formati e allergeni (i nomi dei piatti e i prezzi restano quelli originali).
 - **"Non so cosa bere"**: sceglie una birra a caso e la evidenzia.
 - **Allergeni**: la tabella dei 14 allergeni (Reg. CE 1169/2011) come da cartello.
 - Installabile come app (manifest) e consultabile offline dopo la prima apertura (service worker).
