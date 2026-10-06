@@ -289,7 +289,7 @@ function okt_encode(array $menu): string {
 function okt_publish(array $menu): void {
     okt_ensure_dirs();
     if (is_file(OKT_LIVE)) {
-        $stamp = gmdate('Ymd-His');
+        $stamp = gmdate('Ymd-His') . '-' . bin2hex(random_bytes(2));
         @copy(OKT_LIVE, OKT_BACKUPS . "/menu-$stamp.json");
         // tieni solo gli ultimi N
         $files = glob(OKT_BACKUPS . '/menu-*.json') ?: [];

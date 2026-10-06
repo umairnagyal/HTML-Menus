@@ -26,7 +26,7 @@
       searchPh: "Cerca birra, piatto, cocktail…",
       search: "Cerca nel menù", theme: "Cambia tema", close: "Chiudi",
       backToTop: "Torna all'inizio", prevSection: "Sezione precedente", nextSection: "Sezione successiva",
-      myList: "La mia lista",
+      myList: "La mia lista", myListShort: "Lista",
       listSub: "Un promemoria per ordinare con calma. Non è un ordine.",
       listEmpty: "La lista è vuota. Tocca <b>+</b> accanto a una voce per aggiungerla.",
       noteLabel: "Appunti", notePh: "Es. tavolo 6 · senza cipolla · due cannucce…",
@@ -44,7 +44,7 @@
       surpriseToast: n => `Oggi ti consigliamo: ${n}`,
       qtyMinus: "Diminuisci", qtyPlus: "Aumenta", sectionsLabel: "Sezioni del menù",
       draft: "Anteprima della bozza · non pubblicata", loadError: "Menù momentaneamente non disponibile. Riprova tra poco.",
-      reg: "Reg. CE 1169/2011"
+      reg: "Reg. CE 1169/2011", staff: "Area riservata"
     },
     en: {
       heroTag: "The full menu. Scroll, search, add to your list.",
@@ -52,7 +52,7 @@
       searchPh: "Search beer, dish, cocktail…",
       search: "Search the menu", theme: "Toggle theme", close: "Close",
       backToTop: "Back to top", prevSection: "Previous section", nextSection: "Next section",
-      myList: "My list",
+      myList: "My list", myListShort: "List",
       listSub: "A reminder to order at your pace. This is not an order.",
       listEmpty: "Your list is empty. Tap <b>+</b> next to an item to add it.",
       noteLabel: "Notes", notePh: "E.g. table 6 · no onion · two straws…",
@@ -70,7 +70,7 @@
       surpriseToast: n => `Tonight we suggest: ${n}`,
       qtyMinus: "Decrease", qtyPlus: "Increase", sectionsLabel: "Menu sections",
       draft: "Draft preview · not published", loadError: "The menu is temporarily unavailable. Please try again shortly.",
-      reg: "EC Reg. 1169/2011"
+      reg: "EC Reg. 1169/2011", staff: "Staff area"
     }
   };
   let lang = "it"; // all'apertura SEMPRE italiano; EN solo su richiesta dal pulsante in alto
@@ -282,7 +282,7 @@
       const y = window.scrollY; const q = searchInput.value;
       renderAll();
       $$(".reveal").forEach(e => e.classList.add("is-visible"));
-      activeId = null; updateActive();
+      activeId = null; invalidate(); updateActive();
       if (q) runSearch(q);
       window.scrollTo({ top: y, behavior: "auto" });
     }
@@ -457,7 +457,7 @@
     if (!terms.length) {
       $$(".is-hidden").forEach(el => el.classList.remove("is-hidden"));
       $$("mark.hl").forEach(m => m.replaceWith(m.textContent));
-      $("#emptyState").hidden = true; searchHint.textContent = ""; $("#navSub").hidden = true; updateActive(); return;
+      $("#emptyState").hidden = true; searchHint.textContent = ""; $("#navSub").hidden = true; invalidate(); activeId = null; updateActive(); return;
     }
     const items = $$(".item");
     const match = (hay, loose) => terms.every(tm => loose ? hay.includes(tm) : hay.split(/[^a-z0-9]+/).some(w => w.startsWith(tm)));
@@ -473,6 +473,7 @@
     });
     $("#emptyState").hidden = hits > 0;
     searchHint.textContent = t("results", hits);
+    invalidate(); activeId = null;
     highlight(terms);
   }
   function highlight(terms) {
@@ -499,10 +500,26 @@
 
   /* ------------------------------------------------------------------
      Navigazione: sezione attiva, sotto-sezioni, prev/next, top
+     Le posizioni di sezioni e gruppi vengono misurate una volta e tenute
+     in cache: lo scroll legge solo numeri, senza ricalcolare il layout.
      ------------------------------------------------------------------ */
   const sections = () => $$("main .section:not(.is-hidden)");
-  let activeId = null;
-  function navOffset() { return $("#topbar").offsetHeight + $("#nav").offsetHeight + (searchBar.hidden ? 0 : searchBar.offsetHeight) + 8; }
+  let activeId = null, activeGroup = null, LAYOUT = null;
+  const ui = { prev: null, next: null, top: null };
+  function subHeight() { const sub = $("#navSub"); return sub.hidden ? 41 : sub.offsetHeight; }
+  function navOffset() { return $("#topbar").offsetHeight + $("#nav").offsetHeight + (searchBar.hidden ? 0 : searchBar.offsetHeight) + subHeight() + 8; }
+  function measure() {
+    const sy = window.scrollY;
+    LAYOUT = {
+      navOff: navOffset(),
+      max: Math.max(1, document.documentElement.scrollHeight - window.innerHeight),
+      secs: sections().map(sec => ({
+        id: sec.id, el: sec, top: sec.getBoundingClientRect().top + sy,
+        groups: $$(".group:not(.is-hidden)", sec).map(g => ({ id: g.id, top: g.getBoundingClientRect().top + sy }))
+      }))
+    };
+  }
+  function invalidate() { LAYOUT = null; }
 
   function centerChip(chip) {
     if (!chip) return;
@@ -511,25 +528,30 @@
   }
 
   function updateActive() {
-    const y = window.scrollY + navOffset() + 40;
-    let cur = null;
-    sections().forEach(s => { if (s.offsetTop <= y) cur = s; });
+    if (!LAYOUT) measure();
+    const sy = window.scrollY, y = sy + LAYOUT.navOff + 40;
+    let ci = -1;
+    for (let i = 0; i < LAYOUT.secs.length; i++) { if (LAYOUT.secs[i].top <= y) ci = i; else break; }
+    const cur = ci >= 0 ? LAYOUT.secs[ci] : null;
     const id = cur ? cur.id : null;
     if (id !== activeId) {
-      activeId = id;
+      activeId = id; activeGroup = undefined;
       $$(".nav-chip:not(.nav-chip--sub)").forEach(c => c.classList.toggle("is-active", c.dataset.target === id));
       centerChip($(`.nav-chip[data-target="${id}"]`));
-      renderSubNav(cur);
+      renderSubNav(cur ? cur.el : null);
     }
-    if (cur) {
-      let g = null; $$(".group:not(.is-hidden)", cur).forEach(x => { if (x.offsetTop <= y + 10) g = x; });
-      $$(".nav-chip--sub").forEach(c => c.classList.toggle("is-active", g && c.dataset.target === g.id));
+    let g = null;
+    if (cur) for (const x of cur.groups) { if (x.top <= y + 10) g = x.id; else break; }
+    if (g !== activeGroup) {
+      activeGroup = g;
+      $$(".nav-chip--sub").forEach(c => c.classList.toggle("is-active", c.dataset.target === g));
       centerChip($(".nav-chip--sub.is-active"));
     }
-    const lst = sections(); const i = lst.findIndex(s => s.id === id);
-    $("#prevSection").disabled = i <= 0 && window.scrollY < 10;
-    $("#nextSection").disabled = i >= lst.length - 1;
-    $("#toTop").classList.toggle("is-visible", window.scrollY > 500);
+    // aggiorna i pulsanti solo quando cambia qualcosa
+    const prev = ci <= 0 && sy < 10, next = ci >= LAYOUT.secs.length - 1, top = sy > 500;
+    if (prev !== ui.prev) { ui.prev = prev; $("#prevSection").disabled = prev; }
+    if (next !== ui.next) { ui.next = next; $("#nextSection").disabled = next; }
+    if (top !== ui.top) { ui.top = top; $("#toTop").classList.toggle("is-visible", top); }
   }
   function renderSubNav(sec) {
     const sub = $("#navSub");
@@ -548,40 +570,46 @@
     e.preventDefault();
     const target = document.getElementById(a.dataset.target);
     if (a.classList.contains("nav-chip--sub")) { scrollToEl(target); return; }
-    renderSubNav(target); scrollToEl(target);
+    scrollToEl(target);
     history.replaceState(null, "", "#" + a.dataset.target);
   });
   $("#prevSection").addEventListener("click", () => {
-    const lst = sections(); const i = lst.findIndex(s => s.id === activeId);
+    if (!LAYOUT) measure();
+    const lst = LAYOUT.secs; const i = lst.findIndex(s => s.id === activeId);
     const cur = lst[i];
-    if (cur && window.scrollY > cur.offsetTop - navOffset() + 60) { scrollToEl(cur); return; }
-    if (i > 0) scrollToEl(lst[i - 1]); else window.scrollTo({ top: 0, behavior: "smooth" });
+    if (cur && window.scrollY > cur.top - navOffset() + 60) { scrollToEl(cur.el); return; }
+    if (i > 0) scrollToEl(lst[i - 1].el); else window.scrollTo({ top: 0, behavior: "smooth" });
   });
   $("#nextSection").addEventListener("click", () => {
-    const lst = sections(); const i = lst.findIndex(s => s.id === activeId);
-    if (i < lst.length - 1) scrollToEl(lst[i + 1]);
+    if (!LAYOUT) measure();
+    const lst = LAYOUT.secs; const i = lst.findIndex(s => s.id === activeId);
+    if (i < lst.length - 1) scrollToEl(lst[i + 1].el);
   });
   $("#toTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   $(".topbar__brand").addEventListener("click", e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); });
 
+  const progressBar = $("#progressBar");
   let ticking = false;
   function onScroll() {
     if (ticking) return; ticking = true;
     requestAnimationFrame(() => {
-      const h = document.documentElement.scrollHeight - window.innerHeight;
-      $("#progressBar").style.width = (h > 0 ? (window.scrollY / h) * 100 : 0) + "%";
+      if (!LAYOUT) measure();
+      progressBar.style.transform = `scaleX(${Math.min(1, window.scrollY / LAYOUT.max)})`;
       updateActive(); ticking = false;
     });
   }
   window.addEventListener("scroll", onScroll, { passive: true });
-  window.addEventListener("resize", onScroll);
+  window.addEventListener("resize", () => { invalidate(); onScroll(); }, { passive: true });
+  // qualsiasi cambio di altezza (descrizioni aperte, ricerca, font caricati, lingua) rinnova la cache
+  if ("ResizeObserver" in window) new ResizeObserver(() => { invalidate(); onScroll(); }).observe(document.body);
 
   function setupReveal() {
     const els = $$(".reveal:not(.is-visible)");
     if (!("IntersectionObserver" in window)) { els.forEach(e => e.classList.add("is-visible")); return; }
+    // margine positivo: le voci compaiono poco prima di entrare nello schermo, mai "a vuoto"
     const io = new IntersectionObserver(entries => {
       entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add("is-visible"); io.unobserve(en.target); } });
-    }, { rootMargin: "0px 0px -8% 0px", threshold: .05 });
+    }, { rootMargin: "0px 0px 20% 0px", threshold: 0 });
     els.forEach(e => io.observe(e));
   }
 

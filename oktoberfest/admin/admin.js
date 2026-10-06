@@ -110,12 +110,14 @@
     $("#authPw").autocomplete = setup ? "new-password" : "current-password";
     $("#authForm").dataset.mode = setup ? "setup" : "login";
     $("#authErr").hidden = true; $("#authPw").value = ""; $("#authPw2").value = "";
-    setTimeout(() => $("#authPw").focus(), 50);
+    $("#authPw").focus({ preventScroll: true });
   }
   $("#authForm").addEventListener("submit", async e => {
     e.preventDefault();
     const mode = e.currentTarget.dataset.mode; const pw = $("#authPw").value;
     const err = $("#authErr"); err.hidden = true;
+    if (!pw) { err.textContent = "Inserisci la password."; err.hidden = false; return; }
+    if (mode === "setup" && pw.length < 8) { err.textContent = "La password deve avere almeno 8 caratteri."; err.hidden = false; return; }
     if (mode === "setup" && pw !== $("#authPw2").value) { err.textContent = "Le due password non coincidono."; err.hidden = false; return; }
     $("#authBtn").disabled = true;
     try {
@@ -142,20 +144,37 @@
      Salvataggio bozza (automatico) · pubblicazione
      ------------------------------------------------------------------ */
   function markDirty() {
+    S.rev = (S.rev || 0) + 1;
     S.dirty = true; renderStatus();
     clearTimeout(S.saveTimer); S.saveTimer = setTimeout(saveDraft, 1200);
   }
   async function saveDraft() {
     if (S.saving) { clearTimeout(S.saveTimer); S.saveTimer = setTimeout(saveDraft, 800); return; }
     S.saving = true; S.lastError = null; renderStatus();
+    const rev = S.rev || 0;
     try {
       const r = await api("save", { body: { menu: S.menu } });
-      if (!sheetOpen()) { S.menu = r.menu; render(true); }
-      S.dirty = false; S.lastSaved = r.draftAt; S.status.draft = true;
-    } catch (e) { S.lastError = e.message; toast("Salvataggio non riuscito: " + e.message, true); }
+      S.lastSaved = r.draftAt; S.status.draft = true;
+      if ((S.rev || 0) === rev) {
+        // nessuna modifica nel frattempo: adotta la versione validata dal server
+        S.dirty = false;
+        if (!sheetOpen() && !isTyping()) { S.menu = r.menu; render(true); }
+      }
+      // altrimenti resta "dirty": il timer già programmato salverà anche le ultime modifiche
+      S.fails = 0;
+    } catch (e) {
+      S.lastError = e.message; S.fails = (S.fails || 0) + 1;
+      if (S.fails === 1) toast("Salvataggio non riuscito: " + e.message + " · riprovo automaticamente", true);
+      clearTimeout(S.saveTimer); S.saveTimer = setTimeout(saveDraft, Math.min(30000, 4000 * S.fails));
+    }
     finally { S.saving = false; renderStatus(); }
   }
-  async function flushSave() { clearTimeout(S.saveTimer); if (S.dirty) await saveDraft(); }
+  function isTyping() { const a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !!a.closest("#view"); }
+  async function flushSave() {
+    clearTimeout(S.saveTimer);
+    for (let i = 0; i < 20 && S.saving; i++) await new Promise(r => setTimeout(r, 150));
+    if (S.dirty) await saveDraft();
+  }
 
   $("#publishBtn").addEventListener("click", async () => {
     await flushSave();
@@ -213,7 +232,7 @@
       if (!data || !Array.isArray(data.sections)) throw new Error("Il file non sembra un menù esportato da questo pannello.");
       const ok = await confirmDlg("Importare questo menù?", `Sostituisce la bozza con il contenuto di "${f.name}" (${data.sections.length} sezioni). Potrai controllarlo e pubblicarlo in seguito.`, "Importa");
       if (!ok) return;
-      S.menu = data; S.sectionId = null; markDirty(); render();
+      S.menu = data; S.view = "menu"; S.sectionId = null; markDirty(); render();
       toast("Menù importato come bozza");
     } catch (ex) { toast(ex.message, true); }
   });
@@ -459,7 +478,9 @@
     $("#sheetTitle").textContent = title; sheetForm.innerHTML = html; sheetFoot.innerHTML = footHtml;
     sheetSubmit = onSubmit; $("#sheetBackdrop").hidden = false; sheet.hidden = false;
     document.documentElement.style.overflow = "hidden";
-    const first = sheetForm.querySelector("input:not([type=hidden]):not([type=checkbox]):not([type=radio]), textarea"); if (first) setTimeout(() => first.focus(), 60);
+    // focus immediato (mai ritardato): un focus in ritardo può rubare la digitazione da un altro campo
+    const first = sheetForm.querySelector("input:not([type=hidden]):not([type=checkbox]):not([type=radio]), textarea");
+    if (first && window.matchMedia("(pointer: fine)").matches) first.focus({ preventScroll: true });
   }
   function closeSheet() { sheet.hidden = true; $("#sheetBackdrop").hidden = true; sheetSubmit = null; document.documentElement.style.overflow = ""; }
   $("#sheetClose").addEventListener("click", closeSheet);
@@ -613,24 +634,31 @@
 
   /* ---- Selettore immagini ---- */
   function pickImage() {
-    return new Promise(async resolve => {
-      const d = $("#picker"), grid = $("#pickerGrid");
-      grid.innerHTML = '<div class="empty">Caricamento…</div>';
-      d.showModal();
-      const done = v => { d.close(); resolve(v); };
-      const draw = async () => {
-        try { const r = await api("images"); S.images = r.images; } catch (e) { grid.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
-        grid.innerHTML = S.images.map(im => `<button type="button" data-path="${esc(im.path)}"><img src="../assets/img/${esc(im.path)}" alt="" loading="lazy"><small>${esc(im.path.split("/").pop())}</small></button>`).join("") || '<div class="empty">Nessuna immagine. Caricane una.</div>';
-      };
-      await draw();
+    return new Promise(resolve => {
+      const d = $("#picker"), grid = $("#pickerGrid"), up = $("#pickerUpload");
+      let settled = false;
+      const done = v => { if (settled) return; settled = true; if (d.open) d.close(); resolve(v); };
+      // i gestori vanno collegati PRIMA di caricare la galleria
       grid.onclick = e => { const b = e.target.closest("button[data-path]"); if (b) done(b.dataset.path); };
       $("#pickerClose").onclick = () => done(null);
-      d.oncancel = () => resolve(null);
-      $("#pickerUpload").onchange = async e => {
+      d.onclose = () => done(null);
+      up.onchange = async e => {
         const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+        if (f.size > 3 * 1024 * 1024) return toast("Immagine troppo grande (max 3 MB)", true);
         const form = new FormData(); form.append("file", f);
-        try { const r = await api("upload", { form }); toast("Immagine caricata"); done(r.path); } catch (ex) { toast(ex.message, true); }
+        grid.insertAdjacentHTML("afterbegin", '<div class="empty" id="pickerBusy">Caricamento immagine…</div>');
+        try { const r = await api("upload", { form }); S.images = null; toast("Immagine caricata"); done(r.path); }
+        catch (ex) { toast(ex.message, true); }
+        finally { const b = $("#pickerBusy"); if (b) b.remove(); }
       };
+      grid.innerHTML = '<div class="empty">Caricamento…</div>';
+      d.showModal();
+      (async () => {
+        try { if (!S.images) S.images = (await api("images")).images; }
+        catch (e) { grid.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+        if (settled) return;
+        grid.innerHTML = S.images.map(im => `<button type="button" data-path="${esc(im.path)}"><img src="../assets/img/${esc(im.path)}" alt="" loading="lazy"><small>${esc(im.path.split("/").pop())}</small></button>`).join("") || '<div class="empty">Nessuna immagine. Caricane una.</div>';
+      })();
     });
   }
 

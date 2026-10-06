@@ -144,7 +144,7 @@ try {
         case 'restore': {  // carica un backup come bozza (non pubblica)
             okt_require_post(); okt_require_auth(); okt_require_csrf();
             $name = basename((string)($body['name'] ?? ''));
-            if (!preg_match('/^menu-\d{8}-\d{6}\.json$/', $name) || !is_file(OKT_BACKUPS . "/$name")) okt_fail('Backup non trovato', 404);
+            if (!preg_match('/^menu-\d{8}-\d{6}(-[0-9a-f]{4})?\.json$/', $name) || !is_file(OKT_BACKUPS . "/$name")) okt_fail('Backup non trovato', 404);
             $d = okt_read_json(OKT_BACKUPS . "/$name");
             if ($d === null) okt_fail('Backup non leggibile', 500);
             $menu = okt_normalize_menu($d);

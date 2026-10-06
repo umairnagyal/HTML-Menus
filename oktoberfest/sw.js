@@ -1,7 +1,7 @@
 /* Service worker · Birreria Oktoberfest menù
    HTML/JS/CSS: network-first (così gli aggiornamenti del menù arrivano subito).
    Immagini e font: cache-first.                                              */
-const VERSION = "okt-menu-v4";
+const VERSION = "okt-menu-v5";
 const CORE = ["./", "./index.html", "./assets/css/style.css", "./assets/js/menu-fallback.js", "./assets/js/app.js", "./data/menu.json", "./assets/img/logo-card.webp", "./assets/img/wordmark.webp", "./assets/css/fonts.css", "./assets/fonts/barlow-condensed-700.woff2", "./assets/fonts/inter-variable.woff2"];
 
 self.addEventListener("install", e => {
