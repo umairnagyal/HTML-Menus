@@ -1,0 +1,7 @@
+# Stato generato sul server dal pannello admin: mai in git
+oktoberfest/api/state/
+oktoberfest/data/draft.json
+oktoberfest/data/backups/
+oktoberfest/assets/img/uploads/*
+!oktoberfest/assets/img/uploads/.gitkeep
+*.tmp.*

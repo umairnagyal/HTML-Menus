@@ -1,8 +1,8 @@
 /* Service worker · Birreria Oktoberfest menù
    HTML/JS/CSS: network-first (così gli aggiornamenti del menù arrivano subito).
    Immagini e font: cache-first.                                              */
-const VERSION = "okt-menu-v3";
-const CORE = ["./", "./index.html", "./assets/css/style.css", "./assets/js/menu-data.js", "./assets/js/app.js", "./assets/js/menu-data.en.js", "./assets/img/logo-card.webp", "./assets/img/wordmark.webp", "./assets/css/fonts.css", "./assets/fonts/barlow-condensed-700.woff2", "./assets/fonts/inter-variable.woff2"];
+const VERSION = "okt-menu-v4";
+const CORE = ["./", "./index.html", "./assets/css/style.css", "./assets/js/menu-fallback.js", "./assets/js/app.js", "./data/menu.json", "./assets/img/logo-card.webp", "./assets/img/wordmark.webp", "./assets/css/fonts.css", "./assets/fonts/barlow-condensed-700.woff2", "./assets/fonts/inter-variable.woff2"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
@@ -14,6 +14,7 @@ self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  if (url.origin !== location.origin || /\/(api|admin)\//.test(url.pathname)) return; // pannello e API: mai in cache
   const isAsset = /\.(webp|png|jpg|jpeg|svg|woff2?|ttf)$/i.test(url.pathname) || url.hostname.endsWith("gstatic.com");
   if (isAsset) {
     e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => {

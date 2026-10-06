@@ -1,0 +1,10 @@
+# menu.json e draft.json sono pubblici (li legge il menù); i backup no
+<IfModule mod_rewrite.c>
+  RewriteEngine Off
+</IfModule>
+<IfModule mod_headers.c>
+  <FilesMatch "\.json$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
+AddType application/json .json
