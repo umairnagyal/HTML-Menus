@@ -26,7 +26,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; font-family: var(--font-body); font-size: 15px; line-height: 1.45; color: var(--text); background: var(--bg); min-height: 100dvh; -webkit-font-smoothing: antialiased; }
-img { max-width: 100%; display: block; }
+img { max-width: 100%; height: auto; display: block; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
@@ -104,7 +104,7 @@ details.fieldset[open] > summary::before { transform: rotate(90deg); }
 /* ---------- Auth ---------- */
 .auth { min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; background: radial-gradient(120% 90% at 50% -10%, var(--bg-2), var(--bg) 60%); }
 .auth__card { width: min(420px, 100%); padding: 22px; border-radius: 24px; background: var(--surface); border: 1px solid var(--line-strong); box-shadow: var(--shadow); display: grid; gap: 14px; }
-.auth__logo { width: 44%; margin: 0 auto 4px; border-radius: 16px; }
+.auth__logo { width: min(240px, 62%); height: auto; aspect-ratio: 941 / 840; object-fit: contain; margin: 0 auto 4px; border-radius: 16px; }
 .auth__title { font-size: 30px; text-align: center; }
 .auth__sub { margin: -6px 0 0; text-align: center; color: var(--muted); font-size: 14px; }
 .auth form { display: grid; gap: 12px; }
