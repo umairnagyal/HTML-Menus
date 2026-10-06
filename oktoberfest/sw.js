@@ -1,8 +1,8 @@
 /* Service worker · Birreria Oktoberfest menù
    HTML/JS/CSS: network-first (così gli aggiornamenti del menù arrivano subito).
    Immagini e font: cache-first.                                              */
-const VERSION = "okt-menu-v2";
-const CORE = ["./", "./index.html", "./assets/css/style.css", "./assets/js/menu-data.js", "./assets/js/app.js", "./assets/img/logo-title.webp", "./assets/img/wordmark.webp", "./assets/css/fonts.css", "./assets/fonts/barlow-condensed-700.woff2", "./assets/fonts/inter-variable.woff2"];
+const VERSION = "okt-menu-v3";
+const CORE = ["./", "./index.html", "./assets/css/style.css", "./assets/js/menu-data.js", "./assets/js/app.js", "./assets/js/menu-data.en.js", "./assets/img/logo-card.webp", "./assets/img/wordmark.webp", "./assets/css/fonts.css", "./assets/fonts/barlow-condensed-700.woff2", "./assets/fonts/inter-variable.woff2"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
